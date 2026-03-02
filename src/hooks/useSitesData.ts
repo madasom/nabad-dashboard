@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { computeCompositeScore, SiteProfile, siteProfiles } from "@/data/nabad";
+import { computeCompositeScore, SiteProfile } from "@/data/nabad";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -135,7 +135,7 @@ export function useSitesData() {
     },
   });
 
-  const data = query.data ?? siteProfiles;
-  const scored: ScoredSite[] = data.map((s) => ({ ...s, _score: computeCompositeScore(s) }));
+  const data = query.data; // no static fallback
+  const scored: ScoredSite[] = (data ?? []).map((s) => ({ ...s, _score: computeCompositeScore(s) }));
   return { data: scored, isLoading: query.isLoading, isError: query.isError };
 }

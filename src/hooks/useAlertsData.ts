@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { communityAlerts } from "@/data/nabad";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -37,16 +36,5 @@ export function useAlertsData() {
     },
   });
 
-  const data = query.data ?? communityAlerts.map((a) => ({
-    id: a.id,
-    siteName: a.site,
-    district: a.district,
-    channel: a.channel,
-    category: a.category,
-    severity: a.severity,
-    message: a.message,
-    reportedAt: a.reportedAt,
-  }));
-
-  return { data, isLoading: query.isLoading, isError: query.isError };
+  return { data: query.data, isLoading: query.isLoading, isError: query.isError };
 }

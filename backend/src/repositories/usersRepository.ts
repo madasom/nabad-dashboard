@@ -6,6 +6,10 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { email } });
 }
 
+export async function listUsers(): Promise<User[]> {
+  return prisma.user.findMany({ orderBy: { email: 'asc' } });
+}
+
 export async function ensureSeedUser() {
   const exists = await prisma.user.findFirst();
   if (!exists) {

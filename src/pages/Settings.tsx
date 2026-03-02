@@ -34,7 +34,7 @@ const Settings = () => {
       <div className="page-header">
         <h1 className="page-title">Settings</h1>
         <p className="page-description">
-          Configure the Oxfam Novib vulnerability dashboard preferences
+          Configure the DawaSom vulnerability dashboard preferences
         </p>
       </div>
 
@@ -60,7 +60,7 @@ const Settings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Organization Name</Label>
-                  <Input defaultValue="Oxfam Novib" />
+                  <Input defaultValue="DawaSom" />
                 </div>
                 <div className="space-y-2">
                   <Label>Program Name</Label>
@@ -68,17 +68,17 @@ const Settings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Contact Email</Label>
-                  <Input defaultValue="info@oxfam.org" type="email" />
+                  <Input defaultValue="info@dawasom.org" type="email" />
                 </div>
                 <div className="space-y-2">
                   <Label>Contact Phone</Label>
                   <Input defaultValue="+252 xx xxx xxxx" type="tel" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Address</Label>
-                <Input defaultValue="Banadir Region, Somalia" />
-              </div>
+                <div className="space-y-2">
+                  <Label>Address</Label>
+                  <Input defaultValue="Somalia" />
+                </div>
               <Button>Save Changes</Button>
             </CardContent>
           </Card>
@@ -90,7 +90,7 @@ const Settings = () => {
                 <Palette className="h-5 w-5" />
                 Appearance
               </CardTitle>
-              <CardDescription>Align the UI to Oxfam Novib branding and map style</CardDescription>
+              <CardDescription>Align the UI to DawaSom branding and map style</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="flex items-center justify-between">

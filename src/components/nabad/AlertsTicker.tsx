@@ -14,6 +14,7 @@ const severityTone: Record<string, string> = {
 
 export const AlertsTicker = () => {
   const { data } = useAlertsData();
+  if (!data || data.length === 0) return null;
   const sorted = [...data].sort(
     (a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime()
   );

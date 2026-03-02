@@ -25,6 +25,7 @@ const leadDriver = (score: ReturnType<typeof computeCompositeScore>) => {
 };
 
 export const PriorityStack = ({ sites }: { sites: ScoredSite[] }) => {
+  if (!sites || sites.length === 0) return null;
   const scored = sites.map((s) => ({ ...s, score: s._score ?? computeCompositeScore(s) }));
   const topSites = scored
     .sort((a, b) => b.score.composite - a.score.composite)

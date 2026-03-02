@@ -16,6 +16,7 @@ import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import FormPublic from "./pages/FormPublic";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,11 @@ const router = createBrowserRouter([
       { path: "settings", element: <RequireAuth><Settings /></RequireAuth> },
       { path: "*", element: <NotFound /> },
     ],
+  },
+  {
+    // public form routes without app shell / auth
+    element: <LoginShell />,
+    children: [{ path: "forms/:slug", element: <FormPublic /> }],
   },
 ]);
 

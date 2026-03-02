@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export type SiteRow = {
   id: string;
+  importJobId?: string | null;
   settlement_name: string;
   district: string | null;
   region: string | null;
@@ -80,84 +81,63 @@ export async function listSites(): Promise<SiteRow[]> {
   }));
 }
 
-export async function upsertSites(rows: SiteRow[]): Promise<number> {
+export async function upsertSites(rows: SiteRow[]): Promise<{ created: number; updated: number }> {
+  let created = 0;
+  let updated = 0;
+
   for (const r of rows) {
-    await prisma.site.upsert({
-      where: { id: r.id },
-      create: {
-        id: r.id,
-        settlementName: r.settlement_name,
-        district: r.district,
-        region: r.region,
-        ochaRegionPcode: r.ochaRegionPcode,
-        ochaDistrictPcode: r.ochaDistrictPcode,
-        operationalZone: r.operationalZone,
-        catchment: r.catchment,
-        classification: r.classification,
-        locationType: r.locationType,
-        lat: r.lat,
-        lon: r.lon,
-        households: r.households,
-        arrivals14d: r.arrivals14d,
-        arrivalsMale: r.arrivalsMale,
-        arrivalsFemale: r.arrivalsFemale,
-        arrivalsChildren: r.arrivalsChildren,
-        departures14d: r.departures14d,
-        mainCause: r.mainCause,
-        hazardCause: r.hazardCause,
-        conflictCause: r.conflictCause,
-        mainNeed: r.mainNeed,
-        penta3: r.penta3,
-        gam: r.gam,
-        safety: r.safety,
-        needs: r.needs as Prisma.InputJsonValue,
-        responses: r.responses as Prisma.InputJsonValue,
-        movementType: r.movementType,
-        displacementCount: r.displacementCount,
-        journeyTime: r.journeyTime,
-        originRegion: r.originRegion,
-        originDistrict: r.originDistrict,
-        originLocation: r.originLocation,
-        dataCollectionWeek: r.dataCollectionWeek,
-        raw: r.raw as Prisma.InputJsonValue,
-      },
-      update: {
-        settlementName: r.settlement_name,
-        district: r.district,
-        region: r.region,
-        ochaRegionPcode: r.ochaRegionPcode,
-        ochaDistrictPcode: r.ochaDistrictPcode,
-        operationalZone: r.operationalZone,
-        catchment: r.catchment,
-        classification: r.classification,
-        locationType: r.locationType,
-        lat: r.lat,
-        lon: r.lon,
-        households: r.households,
-        arrivals14d: r.arrivals14d,
-        arrivalsMale: r.arrivalsMale,
-        arrivalsFemale: r.arrivalsFemale,
-        arrivalsChildren: r.arrivalsChildren,
-        departures14d: r.departures14d,
-        mainCause: r.mainCause,
-        hazardCause: r.hazardCause,
-        conflictCause: r.conflictCause,
-        mainNeed: r.mainNeed,
-        penta3: r.penta3,
-        gam: r.gam,
-        safety: r.safety,
-        needs: r.needs as Prisma.InputJsonValue,
-        responses: r.responses as Prisma.InputJsonValue,
-        movementType: r.movementType,
-        displacementCount: r.displacementCount,
-        journeyTime: r.journeyTime,
-        originRegion: r.originRegion,
-        originDistrict: r.originDistrict,
-        originLocation: r.originLocation,
-        dataCollectionWeek: r.dataCollectionWeek,
-        raw: r.raw as Prisma.InputJsonValue,
-      },
-    });
+    const data = {
+      importJobId: r.importJobId ?? null,
+      settlementName: r.settlement_name,
+      district: r.district,
+      region: r.region,
+      ochaRegionPcode: r.ochaRegionPcode,
+      ochaDistrictPcode: r.ochaDistrictPcode,
+      operationalZone: r.operationalZone,
+      catchment: r.catchment,
+      classification: r.classification,
+      locationType: r.locationType,
+      lat: r.lat,
+      lon: r.lon,
+      households: r.households,
+      arrivals14d: r.arrivals14d,
+      arrivalsMale: r.arrivalsMale,
+      arrivalsFemale: r.arrivalsFemale,
+      arrivalsChildren: r.arrivalsChildren,
+      departures14d: r.departures14d,
+      mainCause: r.mainCause,
+      hazardCause: r.hazardCause,
+      conflictCause: r.conflictCause,
+      mainNeed: r.mainNeed,
+      penta3: r.penta3,
+      gam: r.gam,
+      safety: r.safety,
+      needs: r.needs as Prisma.InputJsonValue,
+      responses: r.responses as Prisma.InputJsonValue,
+      movementType: r.movementType,
+      displacementCount: r.displacementCount,
+      journeyTime: r.journeyTime,
+      originRegion: r.originRegion,
+      originDistrict: r.originDistrict,
+      originLocation: r.originLocation,
+      dataCollectionWeek: r.dataCollectionWeek,
+      raw: r.raw as Prisma.InputJsonValue,
+    };
+
+    try {
+      await prisma.site.update({
+        where: { id: r.id },
+        data,
+      });
+      updated += 1;
+
+    } catch (err: any) {
+      await prisma.site.create({
+        data: { id: r.id, ...data },
+      });
+      created += 1;
+    }
   }
-  return rows.length;
+
+  return { created, updated };
 }

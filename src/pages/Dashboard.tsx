@@ -21,9 +21,9 @@ const Dashboard = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Oxfam Novib — Vulnerability Brain</h1>
+          <h1 className="text-2xl font-bold">DawaSom — Vulnerability Brain</h1>
           <p className="text-muted-foreground">
-            Composite Vulnerability Index driving deployments across Banadir (as of 25 Feb 2026)
+            Composite Vulnerability Index driving deployments (as of 25 Feb 2026)
           </p>
         </div>
         <Badge variant="secondary" className="gap-1">

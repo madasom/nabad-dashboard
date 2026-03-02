@@ -45,7 +45,7 @@ const Login = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
-          <CardDescription>Use your Oxfam Novib credentials</CardDescription>
+          <CardDescription>Use your DawaSom credentials</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>

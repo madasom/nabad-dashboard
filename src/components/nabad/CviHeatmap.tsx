@@ -47,7 +47,7 @@ export const CviHeatmap = ({ sites = siteProfiles, onSelect, highlight }: Heatma
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div>
           <CardTitle className="text-lg">Composite Vulnerability Map (CVI)</CardTitle>
-          <p className="text-sm text-muted-foreground">Prioritized sites in Banadir, refreshed 14-day window</p>
+        <p className="text-sm text-muted-foreground">Prioritized sites, refreshed 14-day window</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="gap-1">

@@ -9,6 +9,8 @@ export type ImportJob = {
   filename: string;
   status: "pending" | "failed" | "done" | string;
   message?: string | null;
+  totalRows?: number | null;
+  importedRows?: number;
   createdAt: string;
   finishedAt?: string | null;
 };

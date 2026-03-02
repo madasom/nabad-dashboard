@@ -85,20 +85,15 @@ export function AppSidebar() {
       )}
     >
       {/* Logo/Brand */}
-      <div className="flex items-center h-16 px-4 border-b border-sidebar-border justify-center" style={{
-        backgroundImage: collapsed ? 'url(/logo_small.png)' :  'url(/logo.png)',
-        backgroundSize: '70%',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-      }}>
-          {/* <img
-            className="w-full h-full object-contain"
-          style={{
-            border:'2px solid red'
-          }}
-            src={collapsed ? "/logo_small.png" : "/logo.png"}
-            alt="Nabad Mobile Hub logo"
-          /> */}
+      <div className="flex items-center h-16 px-4 border-b border-sidebar-border gap-3">
+        <div
+          className="h-10 w-10 flex-shrink-0 bg-center bg-no-repeat bg-contain"
+          style={{ backgroundImage: `url(${collapsed ? "/DAWA-logo.png.png" : "/DAWA-logo.png"})` }}
+          aria-label="DawaSom logo"
+        />
+        {!collapsed && (
+          <span className="font-semibold text-lg text-foreground truncate">DawaSom Vulnerability Brain</span>
+        )}
       </div>
 
       {/* Main Navigation */}

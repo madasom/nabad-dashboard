@@ -11,6 +11,8 @@ generator client {
 
 model Site {
   id               String   @id
+  importJobId      String?
+  importJob        ImportJob? @relation(fields: [importJobId], references: [id])
   settlementName   String
   district         String?
   region           String?
@@ -59,6 +61,28 @@ model CommunityAlert {
   reportedAt DateTime
 }
 
+model Form {
+  id          String   @id
+  title       String
+  slug        String   @unique
+  description String?
+  headerImage String?
+  fields      Json
+  sections    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  responses   FormResponse[]
+}
+
+model FormResponse {
+  id          String   @id
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id])
+  answers     Json
+  submittedAt DateTime @default(now())
+  sourceIp    String?
+}
+
 model ImportJob {
   id         String   @id
   filename   String
@@ -66,8 +90,11 @@ model ImportJob {
   message    String?
   tempPath   String?
   savedTemp  Boolean  @default(false)
+  totalRows  Int?
+  importedRows Int   @default(0)
   createdAt  DateTime @default(now())
   finishedAt DateTime?
+  sites      Site[]
 }
 
 model User {
