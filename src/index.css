@@ -9,8 +9,8 @@
 
 @layer base {
   :root {
-    /* Nabad palette — anchored to logo green */
-    --primary: 86 64% 44%;
+    /* DawaSom palette — anchored to logo green (#047500) */
+    --primary: 118 100% 23%;
     --primary-foreground: 0 0% 100%;
     
     /* Warm sand accent for calls-to-action */
@@ -49,22 +49,22 @@
     /* Borders and inputs */
     --border: 90 12% 86%;
     --input: 90 12% 86%;
-    --ring: 86 64% 44%;
+    --ring: 118 100% 23%;
     
     --radius: 0.625rem;
     
     /* Sidebar tuned to logo */
     --sidebar-background: 90 16% 95%;
     --sidebar-foreground: 150 10% 20%;
-    --sidebar-primary: 86 64% 44%;
+    --sidebar-primary: 118 100% 23%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 32 84% 52%;
     --sidebar-accent-foreground: 28 60% 14%;
     --sidebar-border: 90 12% 88%;
-    --sidebar-ring: 86 64% 44%;
+    --sidebar-ring: 118 100% 23%;
     
     /* Chart colors */
-    --chart-1: 86 64% 44%;
+    --chart-1: 118 100% 23%;
     --chart-2: 32 84% 52%;
     --chart-3: 168 52% 44%;
     --chart-4: 275 45% 52%;
@@ -77,7 +77,7 @@
   }
 
   .dark {
-    --primary: 86 64% 48%;
+    --primary: 118 90% 30%;
     --primary-foreground: 210 18% 12%;
     
     --accent: 32 84% 56%;
@@ -109,16 +109,16 @@
     
     --border: 210 14% 22%;
     --input: 210 14% 22%;
-    --ring: 86 64% 48%;
+    --ring: 118 90% 30%;
     
     --sidebar-background: 210 18% 11%;
     --sidebar-foreground: 120 12% 90%;
-    --sidebar-primary: 86 64% 48%;
+    --sidebar-primary: 118 90% 30%;
     --sidebar-primary-foreground: 210 18% 12%;
     --sidebar-accent: 32 84% 56%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 210 14% 20%;
-    --sidebar-ring: 86 64% 48%;
+    --sidebar-ring: 118 90% 30%;
   }
 }
 

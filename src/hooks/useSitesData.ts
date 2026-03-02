@@ -3,8 +3,9 @@ import { computeCompositeScore, SiteProfile } from "@/data/nabad";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "@/config/api";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const apiUrl = API_BASE;
 
 export type ScoredSite = SiteProfile & {
   _score: ReturnType<typeof computeCompositeScore>;

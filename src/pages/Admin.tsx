@@ -56,6 +56,7 @@ import { useDeleteForm } from "@/hooks/useDeleteForm";
 import { useUsers } from "@/hooks/useUsers";
 import { useSitesData } from "@/hooks/useSitesData";
 import { useAlertsData } from "@/hooks/useAlertsData";
+import { API_BASE } from "@/config/api";
 
 const Admin = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -134,7 +135,7 @@ const Admin = () => {
 
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
-      const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+      const apiUrl = API_BASE;
       const form = new FormData();
       form.append("file", file);
       return await new Promise((resolve, reject) => {

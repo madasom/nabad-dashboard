@@ -8,7 +8,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+import { API_BASE } from "@/config/api";
+
+const apiUrl = API_BASE;
 
 const Login = () => {
   const { login } = useAuth();
