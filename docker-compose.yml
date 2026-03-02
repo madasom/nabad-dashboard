@@ -1,5 +1,3 @@
-
-version: '3'
 services:
   app:
     build:
@@ -7,12 +5,11 @@ services:
       dockerfile: backend/Dockerfile
     image: shellton/nabad:latest
     restart: always
+    environment:
+      NODE_ENV: production
+      # Provide your external connection string when running:
+      #   DATABASE_URL=postgresql://user:pass@host:port/dbname?sslmode=require
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: 3126
     ports:
       - "3126:3126"
-    networks:
-      - app_network
-    environment:
-      - NODE_ENV=production
-networks:
-  app_network:
-    driver: bridge

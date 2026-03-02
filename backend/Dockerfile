@@ -1,15 +1,18 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install deps
-COPY package*.json ./
+# Install backend dependencies only
 COPY backend/package*.json ./backend/
-RUN npm install
+RUN cd backend && npm install
 
 # Copy source
-COPY . .
+COPY backend ./backend
 
 WORKDIR /app/backend
-ENV PORT=4000
 
-CMD ["npm", "run", "api:dev"]
+ENV PORT=3126
+
+# Generate Prisma client
+RUN npx prisma generate
+
+CMD ["sh", "-c", "npx prisma db push && npx tsx src/server.ts"]

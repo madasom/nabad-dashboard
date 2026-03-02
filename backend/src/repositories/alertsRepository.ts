@@ -1,11 +1,11 @@
 import { prisma } from '../services/db';
-import { CommunityAlert } from '@prisma/client';
+import { Prisma, CommunityAlert } from '@prisma/client';
 
 export async function listAlerts(): Promise<CommunityAlert[]> {
   return prisma.communityAlert.findMany({ orderBy: { reportedAt: 'desc' } });
 }
 
-export async function seedAlerts(initial: Omit<CommunityAlert, 'reportedAt'> & { reportedAt: Date }[]) {
+export async function seedAlerts(initial: Prisma.CommunityAlertCreateManyInput[]) {
   const count = await prisma.communityAlert.count();
   if (count > 0) return;
   await prisma.communityAlert.createMany({

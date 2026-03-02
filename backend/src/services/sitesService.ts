@@ -229,7 +229,7 @@ export async function triggerProcessing() {
       for (const job of pending) {
         const existingCount = job._count?.sites ?? 0;
         console.log(`[import] job ${job.id} has ${existingCount} rows already imported`);
-        console.log(`[import] job ${job.id} has ${job.importedRow} rows already imported`);
+        console.log(`[import] job ${job.id} has ${job.importedRows ?? 0} rows already imported`);
         if (existingCount > (job.importedRows ?? 0)) {
           await bumpImportedRows(job.id, existingCount);
           console.log(`[import] job ${job.id} resume progress: importedRows set to ${existingCount}`);
