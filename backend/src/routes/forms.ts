@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { createFormController, getFormPublicController, listFormsController, submitFormController, updateFormController, listFormResponsesController, deleteFormController } from '../controllers/formsController';
+import { createFormController, getFormPublicController, listFormsController, submitFormController, updateFormController, listFormResponsesController, listAllFormResponsesController, deleteFormController } from '../controllers/formsController';
 
 const router = Router();
 
@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', authenticate, listFormsController);
 router.post('/', authenticate, createFormController);
 router.put('/:id', authenticate, updateFormController);
+router.get('/responses/all', authenticate, listAllFormResponsesController);
 router.get('/:id/responses', authenticate, listFormResponsesController);
 router.delete('/:id', authenticate, deleteFormController);
 

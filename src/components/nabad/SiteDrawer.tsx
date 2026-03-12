@@ -4,7 +4,10 @@ import { Progress } from "@/components/ui/progress";
 import { computeCompositeScore } from "@/data/nabad";
 import { ScoredSite } from "@/hooks/useSitesData";
 import { useAlertsData } from "@/hooks/useAlertsData";
-import { Activity, AlertTriangle, Radio, Shield } from "lucide-react";
+import { useCommunityResponses } from "@/hooks/useCommunityResponses";
+import { normalizeCommunityResponse, responseMatchesSite } from "@/lib/communityResponses";
+import { format } from "date-fns";
+import { Activity, AlertTriangle, ClipboardList, Radio, Shield } from "lucide-react";
 
 type Props = {
   siteName: string | null;
@@ -17,15 +20,19 @@ export const SiteDrawer = ({ siteName, sites }: Props) => {
   if (!site) return null;
   const score = site._score ?? computeCompositeScore(site);
   const { data: alertsData } = useAlertsData();
-  const alerts = alertsData.filter((a) => a.siteName === site.name);
+  const communityResponsesQuery = useCommunityResponses();
+  const alerts = (alertsData ?? []).filter((a) => a.siteName === site.name);
+  const matchedCommunityResponses = (communityResponsesQuery.data ?? [])
+    .filter((response) => responseMatchesSite(response, site))
+    .map(normalizeCommunityResponse)
+    .slice(0, 4);
 
   const lead = (() => {
     const factors: [string, number][] = [
       ["Displacement", score.displacementRisk],
       ["Health", score.healthRisk],
       ["Needs", score.needsScore],
-      ["Community", score.communitySignals],
-      ["Safety", score.safetyPenalty],
+      ["Community/MOH Alerts", score.communitySignals],
     ];
     return factors.sort((a, b) => b[1] - a[1])[0][0];
   })();
@@ -34,11 +41,13 @@ export const SiteDrawer = ({ siteName, sites }: Props) => {
     { label: "Displacement", value: score.displacementRisk },
     { label: "Health", value: score.healthRisk },
     { label: "Needs", value: score.needsScore },
-    { label: "Community", value: score.communitySignals },
-    { label: "Safety penalty", value: score.safetyPenalty },
+    { label: "Community/MOH Alerts", value: score.communitySignals },
   ];
 
-  const responses = site.responses ?? {};
+  const importedResponses = site.responses ?? {};
+  const householdsLabel = site.households === null ? "Unknown" : site.households.toLocaleString();
+  const penta3Label = site.penta3Coverage === null ? "Unknown" : `${site.penta3Coverage}%`;
+  const gamLabel = site.gam === null ? "Unknown" : `${site.gam}%`;
 
   return (
     <Card className="border-primary/20">
@@ -56,10 +65,10 @@ export const SiteDrawer = ({ siteName, sites }: Props) => {
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <div>HH: {site.households.toLocaleString()}</div>
+          <div>HH: {householdsLabel}</div>
           <div>New arrivals (14d): {site.newArrivals14d ?? "—"}</div>
-          <div>Penta3: {site.penta3Coverage}%</div>
-          <div>GAM: {site.gam}%</div>
+          <div>Penta3: {penta3Label}</div>
+          <div>GAM: {gamLabel}</div>
           {site.mainNeed && <div>Main need: {site.mainNeed}</div>}
           {(site.mainCause || site.hazardCause || site.conflictCause) && (
             <div className="col-span-2">Cause: {site.mainCause ?? site.hazardCause ?? site.conflictCause}</div>
@@ -110,25 +119,46 @@ export const SiteDrawer = ({ siteName, sites }: Props) => {
           ))}
         </div>
 
-        {Object.keys(responses).length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Shield className="h-4 w-4 text-primary" /> Responses provided
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {Object.entries(responses)
-                .filter(([, v]) => v)
-                .map(([k]) => (
-                  <Badge key={k} variant="secondary" className="capitalize">
-                    {k}
-                  </Badge>
-                ))}
-              {Object.entries(responses).filter(([, v]) => v).length === 0 && (
-                <p className="text-xs text-muted-foreground">No responses recorded.</p>
-              )}
-            </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <ClipboardList className="h-4 w-4 text-primary" /> Community form submissions
           </div>
-        )}
+          {matchedCommunityResponses.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No matched community form submissions for this site yet.</p>
+          ) : (
+            matchedCommunityResponses.map((response) => (
+              <div key={response.id} className="text-xs border border-border rounded-lg p-2 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="outline">{response.formTitle}</Badge>
+                  <span className="text-muted-foreground">{format(new Date(response.submittedAt), "dd MMM yyyy, HH:mm")}</span>
+                </div>
+                <p className="text-sm">{response.summary}</p>
+                <p className="text-muted-foreground">
+                  {response.siteLabel}
+                  {response.districtLabel !== "Unspecified area" ? ` • ${response.districtLabel}` : ""}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Shield className="h-4 w-4 text-primary" /> Imported service responses
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {Object.entries(importedResponses)
+              .filter(([, v]) => v)
+              .map(([k]) => (
+                <Badge key={k} variant="secondary" className="capitalize">
+                  {k}
+                </Badge>
+              ))}
+            {Object.entries(importedResponses).filter(([, v]) => v).length === 0 && (
+              <p className="text-xs text-muted-foreground">No responses recorded in the imported site dataset.</p>
+            )}
+          </div>
+        </div>
 
         {site.safety < 0.45 && (
           <div className="flex items-center gap- text-xs text-red-600">

@@ -41,7 +41,8 @@ type HeatmapProps = {
 export const CviHeatmap = ({ sites = siteProfiles, onSelect, highlight }: HeatmapProps) => {
   const { execMode } = useMode();
   const normalized = (sites as any[]).map((s) => ({ ...s, _score: (s as any)._score ?? computeCompositeScore(s as any) }));
-  const bounds = boundsFromSites(normalized as any);
+  const mappedSites = normalized.filter((site) => Number.isFinite(site.lat) && Number.isFinite(site.lon));
+  const bounds = mappedSites.length > 0 ? boundsFromSites(mappedSites as any) : null;
   return (
     <Card className="border border-primary/10 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -64,11 +65,11 @@ export const CviHeatmap = ({ sites = siteProfiles, onSelect, highlight }: Heatma
         <div className="relative h-[360px] rounded-2xl overflow-hidden bg-[radial-gradient(circle_at_20%_20%,rgba(16,38,84,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(252,211,77,0.15),transparent_40%),linear-gradient(135deg,rgba(15,23,42,0.7),rgba(15,23,42,0.35))] border border-border/60 shadow-inner">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:48px_48px]" />
           <div className="absolute inset-4">
-            {normalized.map((site) => {
+            {mappedSites.map((site) => {
               const score = (site as any)._score ?? computeCompositeScore(site);
               const color = markerColor(score.composite);
-              const x = toPercent(site.lon, bounds.lon.min, bounds.lon.max);
-              const y = toPercent(site.lat, bounds.lat.min, bounds.lat.max);
+              const x = bounds ? toPercent(site.lon, bounds.lon.min, bounds.lon.max) : 50;
+              const y = bounds ? toPercent(site.lat, bounds.lat.min, bounds.lat.max) : 50;
 
               return (
                 <Tooltip key={site.name} delayDuration={0}>
@@ -99,8 +100,8 @@ export const CviHeatmap = ({ sites = siteProfiles, onSelect, highlight }: Heatma
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      HH: {site.households.toLocaleString()} • New arrivals (14d): {site.newArrivals14d} • Penta3:{" "}
-                      {site.penta3Coverage}% • GAM: {site.gam}%
+                      HH: {site.households === null ? "Unknown" : site.households.toLocaleString()} • New arrivals (14d): {site.newArrivals14d} • Penta3:{" "}
+                      {site.penta3Coverage === null ? "Unknown" : `${site.penta3Coverage}%`} • GAM: {site.gam === null ? "Unknown" : `${site.gam}%`}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <Badge className={`${color.className} text-white`}>
@@ -114,6 +115,11 @@ export const CviHeatmap = ({ sites = siteProfiles, onSelect, highlight }: Heatma
                 </Tooltip>
               );
             })}
+            {mappedSites.length === 0 && (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No mapped site coordinates available.
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-3 left-3 flex items-center gap-3 rounded-full bg-background/80 px-3 py-2 text-xs border border-border/60 backdrop-blur">

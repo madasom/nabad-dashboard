@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Targeting from "./pages/Targeting";
 import Operations from "./pages/Operations";
 import Impact from "./pages/Impact";
+import DataValidation from "./pages/DataValidation";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
       { path: "targeting", element: <RequireAuth><Targeting /></RequireAuth> },
       { path: "operations", element: <RequireAuth><Operations /></RequireAuth> },
       { path: "impact", element: <RequireAuth><Impact /></RequireAuth> },
+      { path: "data-validation", element: <RequireAuth><DataValidation /></RequireAuth> },
       { path: "admin", element: <RequireAuth><Admin /></RequireAuth> },
       { path: "settings", element: <RequireAuth><Settings /></RequireAuth> },
       { path: "*", element: <NotFound /> },

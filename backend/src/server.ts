@@ -15,7 +15,8 @@ const host = process.env.HOST ?? '0.0.0.0';
 
 const keyPath = process.env.SSL_KEY_PATH ?? path.resolve(process.cwd(), 'ssl/key.pem');
 const certPath = process.env.SSL_CERT_PATH ?? path.resolve(process.cwd(), 'ssl/certificate.pem');
-const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+// const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+const useHttps = false
 
 console.log(`Starting server on port ${port} (${useHttps ? 'https' : 'http'})`);
 
@@ -30,11 +31,11 @@ const start = async () => {
     const key = fs.readFileSync(keyPath, 'utf8');
     const cert = fs.readFileSync(certPath, 'utf8');
     https.createServer({ key, cert }, app).listen(port, host, () => {
-      console.log(`Youth Blossom backend listening on https://${host}:${port}`);
+      console.log(`DawaSom backend listening on https://${host}:${port}`);
     });
   } else {
     http.createServer(app).listen(port, host, () => {
-      console.log(`Youth Blossom backend listening on http://${host}:${port}`);
+      console.log(`DawaSom backend listening on http://${host}:${port}`);
     });
   }
 };

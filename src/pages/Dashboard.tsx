@@ -13,7 +13,7 @@ import { useSitesData } from "@/hooks/useSitesData";
 import { useImportsData } from "@/hooks/useImportsData";
 
 const Dashboard = () => {
-  const { data: siteProfiles } = useSitesData();
+  const { data: siteProfiles, isLoading: sitesLoading } = useSitesData();
   const imports = useImportsData();
 
   const latestImport = imports.data?.[0];
@@ -28,8 +28,8 @@ const Dashboard = () => {
         </div>
         <Badge variant="secondary" className="gap-1">
           <Settings2 className="h-4 w-4" />
-          Weights: Displacement {defaultWeights.displacement * 100}%, Health {defaultWeights.health * 100}%, Community{" "}
-          {defaultWeights.community * 100}%
+          Weights: Displacement {defaultWeights.displacement * 100}%, Health {defaultWeights.health * 100}%, Needs{" "}
+          {defaultWeights.needs * 100}%, Community/MOH Alerts {defaultWeights.community * 100}%
         </Badge>
         {latestImport && (
           <Badge variant={latestImport.status === "done" ? "secondary" : latestImport.status === "failed" ? "destructive" : "outline"}>
@@ -40,8 +40,8 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
         <div className="xl:col-span-3 space-y-4">
-          <PriorityTable sites={siteProfiles} />
-          <Choropleth sites={siteProfiles} />
+          <PriorityTable sites={siteProfiles} isLoading={sitesLoading} />
+          <Choropleth sites={siteProfiles} isLoading={sitesLoading} />
           <RouteSafety />
           <DataPrecedenceCard />
 
@@ -76,8 +76,8 @@ const Dashboard = () => {
                 </li>
                 <li>Needs (Protection, Food, Health/Nutrition, Wash, New Arrivals) are critical if marked “Yes”.</li>
                 <li>
-                  CVI ≥ 65 → stage deployment; CVI ≥ 80 + critical need → immediate deployment, with corridor safety override if
-                  safety &lt; 45%.
+                  CVI ≥ 65 → stage deployment; CVI ≥ 80 + critical need → immediate deployment. Corridor safety is checked
+                  separately and does not change the CVI formula.
                 </li>
                 <li>A/B testing keeps control sites constant to measure speed-to-site and cost-per-beneficiary.</li>
               </ul>
@@ -86,7 +86,7 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-4">
-          <PriorityStack sites={siteProfiles} />
+          <PriorityStack sites={siteProfiles} isLoading={sitesLoading} />
           <AlertsTicker />
           {imports.isError && <p className="text-xs text-destructive">Failed to load import status</p>}
         </div>

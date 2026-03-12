@@ -4,8 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Youth Ministry Dashboard Design System
-   Warm, welcoming church-friendly palette with modern aesthetics */
+/* DawaSom design system */
 
 @layer base {
   :root {

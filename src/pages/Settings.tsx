@@ -290,7 +290,7 @@ const Settings = () => {
                   <div>
                     <p className="font-medium">Import Data</p>
                     <p className="text-sm text-muted-foreground">
-                      Upload youth records from CSV or Excel files
+                      Upload operational datasets from CSV or Excel files
                     </p>
                   </div>
                 </div>

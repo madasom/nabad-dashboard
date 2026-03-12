@@ -1,9 +1,11 @@
 import Map, { Layer, Source, NavigationControl, Marker, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { computeCompositeScore, siteProfiles } from "@/data/nabad";
 import { ScoredSite } from "@/hooks/useSitesData";
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -114,36 +116,46 @@ type Props = {
   sites?: (typeof siteProfiles | ScoredSite[]);
   onSelect?: (name: string) => void;
   selected?: string | null;
+  isLoading?: boolean;
 };
 
-export const Choropleth = ({ sites = siteProfiles, onSelect, selected }: Props) => {
-  const [hover, setHover] = useState<{ name: string; lon: number; lat: number; score: number; arrivals: number; hh: number } | null>(null);
+export const Choropleth = ({ sites = siteProfiles, onSelect, selected, isLoading = false }: Props) => {
+  const [hover, setHover] = useState<{ name: string; lon: number; lat: number; score: number; arrivals: number; hh: number | null } | null>(null);
   const normalized = (sites as any[]).map((s) => ({ ...s, _score: (s as any)._score ?? computeCompositeScore(s as any) }));
+  const mappedSites = useMemo(
+    () =>
+      normalized.filter(
+        (site) => Number.isFinite(site.lat) && Number.isFinite(site.lon),
+      ),
+    [normalized],
+  );
+  const unmappedCount = normalized.length - mappedSites.length;
 
   const geojson = useMemo(() => {
     return {
       type: "FeatureCollection",
-      features: normalized.map((s) => ({
-        type: "Feature",
-        properties: {
-          name: s.name,
-          district: s.district,
-          households: s.households,
-          score: (s as any)._score?.composite ?? computeCompositeScore(s as any).composite,
-        },
+          features: mappedSites.map((s) => ({
+            type: "Feature",
+            properties: {
+              name: s.name,
+              district: s.district,
+              households: s.households ?? 0,
+              score: (s as any)._score?.composite ?? computeCompositeScore(s as any).composite,
+            },
         geometry: {
           type: "Point",
           coordinates: [s.lon, s.lat],
         },
       })),
     } as const;
-  }, [normalized]);
+  }, [mappedSites]);
 
   const center = useMemo(() => {
-    const lon = normalized.reduce((a, s) => a + s.lon, 0) / normalized.length;
-    const lat = normalized.reduce((a, s) => a + s.lat, 0) / normalized.length;
+    if (mappedSites.length === 0) return { lon: 45.4, lat: 2.08 };
+    const lon = mappedSites.reduce((a, s) => a + s.lon, 0) / mappedSites.length;
+    const lat = mappedSites.reduce((a, s) => a + s.lat, 0) / mappedSites.length;
     return { lon, lat };
-  }, [normalized]);
+  }, [mappedSites]);
 
   return (
     <Card>
@@ -153,6 +165,27 @@ export const Choropleth = ({ sites = siteProfiles, onSelect, selected }: Props) 
       </CardHeader>
       <CardContent>
         <div className="relative h-[360px] w-full overflow-hidden rounded-lg border border-border/60">
+          {isLoading ? (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted/40 backdrop-blur-sm">
+              <div className="flex items-center gap-2 rounded-full border bg-background/90 px-3 py-2 text-sm font-medium text-foreground shadow-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Retrieving site map and CVI layers...
+              </div>
+              <div className="w-[92%] space-y-3">
+                <Skeleton className="h-[250px] w-full rounded-lg" />
+                <div className="flex justify-between gap-3">
+                  <Skeleton className="h-20 w-40 rounded-lg" />
+                  <Skeleton className="h-10 w-24 rounded-lg" />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {!isLoading && mappedSites.length === 0 ? (
+            <div className="flex h-full items-center justify-center bg-muted/20 text-sm text-muted-foreground">
+              No mapped site coordinates available yet.
+            </div>
+          ) : null}
+          {!isLoading && mappedSites.length > 0 ? (
           <Map
             initialViewState={{ longitude: center.lon, latitude: center.lat, zoom: 12.2 }}
             style={{ width: "100%", height: "100%" }}
@@ -171,13 +204,13 @@ export const Choropleth = ({ sites = siteProfiles, onSelect, selected }: Props) 
               <Layer {...glowLayer} />
               <Layer {...circleLayer} />
             </Source>
-            {normalized.map((s) => {
+            {mappedSites.map((s) => {
               const score = (s as any)._score?.composite ?? computeCompositeScore(s as any).composite;
               const color =
                 score >= 80 ? "#ef4444" : score >= 65 ? "#f59e0b" : score >= 50 ? "#eab308" : "#22c55e";
               return (
                 <Marker
-                  key={s.name}
+                  key={s.id ?? s.name}
                   longitude={s.lon}
                   latitude={s.lat}
                   anchor="center"
@@ -239,12 +272,14 @@ export const Choropleth = ({ sites = siteProfiles, onSelect, selected }: Props) 
                 <div className="text-xs space-y-1">
                   <div className="font-semibold text-sm">{hover.name}</div>
                   <div>CVI: {hover.score}</div>
-                  <div>HH: {hover.hh.toLocaleString()}</div>
+                  <div>HH: {hover.hh === null ? "Unknown" : hover.hh.toLocaleString()}</div>
                   <div>Arrivals (14d): {hover.arrivals}</div>
                 </div>
               </Popup>
             )}
           </Map>
+          ) : null}
+          {!isLoading && mappedSites.length > 0 ? (
           <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded-md border text-[11px] text-muted-foreground shadow">
             <div className="font-semibold text-xs text-foreground mb-1">Legend (CVI)</div>
             <div className="flex items-center gap-2">
@@ -264,6 +299,12 @@ export const Choropleth = ({ sites = siteProfiles, onSelect, selected }: Props) 
               <span>{"≥80"} Deploy</span>
             </div>
           </div>
+          ) : null}
+          {!isLoading && mappedSites.length > 0 && unmappedCount > 0 ? (
+            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-md border text-[11px] text-muted-foreground shadow">
+              {unmappedCount.toLocaleString()} sites hidden: missing coordinates
+            </div>
+          ) : null}
           {/* <div className="absolute bottom-2 right-2 bg-white/85 backdrop-blur px-2 py-1 rounded-md border text-[10px] text-muted-foreground shadow">
             © OpenStreetMap · © CARTO
           </div> */}

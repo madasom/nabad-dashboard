@@ -57,10 +57,38 @@ import { useUsers } from "@/hooks/useUsers";
 import { useSitesData } from "@/hooks/useSitesData";
 import { useAlertsData } from "@/hooks/useAlertsData";
 import { API_BASE } from "@/config/api";
+import { ReportsPanel } from "@/components/reports/ReportsPanel";
+
+type ImportDataset = "IOM_ETT" | "MOH_ETT" | "MOH_PENTA3_YEARLY" | "MOH_PENTA3_MONTHLY" | "IDP_SITE_REGISTRY";
+
+const importDatasetMeta: Record<ImportDataset, { label: string; description: string }> = {
+  IOM_ETT: {
+    label: "IOM ETT import",
+    description: "Expected structure: IOM ETT health and displacement signals, sites, GPS, and households.",
+  },
+  MOH_ETT: {
+    label: "MOH ETT import",
+    description: "Expected structure: MOH health and displacement signals using the current ETT mapping.",
+  },
+  MOH_PENTA3_YEARLY: {
+    label: "MOH Penta3 yearly workbook",
+    description: "Expected structure: annual immunization workbook with period/year rows and Penta 1/Penta 3 dose columns.",
+  },
+  MOH_PENTA3_MONTHLY: {
+    label: "MOH Penta3 monthly workbook",
+    description: "Expected structure: monthly immunization workbook with month rows and Pentavale/Penta 1 and 3 dose columns.",
+  },
+  IDP_SITE_REGISTRY: {
+    label: "IDP site registry workbook",
+    description: "Expected structure: site registry with IDP Site Name, Households, Latitude, and Longitude columns.",
+  },
+};
 
 const Admin = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importDataset, setImportDataset] = useState<ImportDataset>("IOM_ETT");
+  const [gamSeason, setGamSeason] = useState("2025/gu");
   const { toast } = useToast();
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -85,7 +113,6 @@ const Admin = () => {
   const [sections, setSections] = useState<string[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragSection, setDragSection] = useState<string>("__nosection");
-  const [exporting, setExporting] = useState(false);
 
   const slugify = (text: string) =>
     text
@@ -93,16 +120,6 @@ const Admin = () => {
       .trim()
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_+|_+$/g, "");
-
-  const downloadBlob = (content: string, filename: string, type = "text/csv") => {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   useEffect(() => {
     setFormSlug(slugify(formTitle));
@@ -133,11 +150,19 @@ const Admin = () => {
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [previewForm, setPreviewForm] = useState<any | null>(null);
 
+  const getImportBadgeVariant = (status: string) => {
+    if (status === "done") return "secondary" as const;
+    if (status === "failed") return "destructive" as const;
+    if (status === "partial") return "outline" as const;
+    return "outline" as const;
+  };
+
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
       const apiUrl = API_BASE;
       const form = new FormData();
       form.append("file", file);
+      form.append("dataset", importDataset);
       return await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${apiUrl}/api/sites/import`);
@@ -192,6 +217,34 @@ const Admin = () => {
       setUploadProgress(null);
       setUploadPhase(null);
       importsQuery.refetch();
+    },
+  });
+
+  const gamSyncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE}/api/sites/sync-gam`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ season: gamSeason }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({ message: "GAM sync failed" }));
+        throw new Error(payload.message ?? "GAM sync failed");
+      }
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
+      toast({
+        title: "FSNAU GAM synced",
+        description: `Imported ${data.imported ?? 0} GAM observations for ${data.season ?? gamSeason}.`,
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "GAM sync failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -350,95 +403,7 @@ const Admin = () => {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Exports</CardTitle>
-              <CardDescription>Download live data snapshots (no static placeholders).</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="outline"
-                  disabled={exporting || sitesQuery.isLoading}
-                  onClick={() => {
-                    if (!sitesQuery.data) return;
-                    setExporting(true);
-                    const rows = sitesQuery.data.map((s) => ({
-                      name: s.name,
-                      district: s.district,
-                      households: s.households,
-                      lat: s.lat,
-                      lon: s.lon,
-                      penta3: s.penta3Coverage,
-                      gam: s.gam,
-                      arrivals14d: s.newArrivals14d,
-                    }));
-                    const csv =
-                      "name,district,households,lat,lon,penta3,gam,arrivals14d\n" +
-                      rows
-                        .map((r) =>
-                          [
-                            r.name,
-                            r.district,
-                            r.households,
-                            r.lat,
-                            r.lon,
-                            r.penta3,
-                            r.gam,
-                            r.arrivals14d,
-                          ]
-                            .map((v) => `"${v ?? ""}"`)
-                            .join(",")
-                        )
-                        .join("\n");
-                    downloadBlob(csv, `sites_${Date.now()}.csv`);
-                    setExporting(false);
-                  }}
-                >
-                  Export Sites (CSV)
-                </Button>
-
-                <Button
-                  variant="outline"
-                  disabled={exporting || alertsQuery.isLoading}
-                  onClick={() => {
-                    if (!alertsQuery.data) return;
-                    setExporting(true);
-                    const csv =
-                      "id,siteName,district,category,severity,message,reportedAt\n" +
-                      alertsQuery.data
-                        .map((a) =>
-                          [a.id, a.siteName ?? a.site, a.district, a.category, a.severity, a.message, a.reportedAt]
-                            .map((v) => `"${(v ?? "").toString().replace(/\"/g, '""')}"`)
-                            .join(",")
-                        )
-                        .join("\n");
-                    downloadBlob(csv, `alerts_${Date.now()}.csv`);
-                    setExporting(false);
-                  }}
-                >
-                  Export Alerts (CSV)
-                </Button>
-
-                <Button
-                  variant="outline"
-                  disabled={exporting || !formsQuery.data}
-                  onClick={async () => {
-                    if (!formsQuery.data) return;
-                    setExporting(true);
-                    const json = JSON.stringify(formsQuery.data, null, 2);
-                    downloadBlob(json, `forms_${Date.now()}.json`, "application/json");
-                    setExporting(false);
-                  }}
-                >
-                  Export Forms (JSON)
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Exports use live API data only; nothing renders from static files.
-              </p>
-            </CardContent>
-          </Card>
+          <ReportsPanel showHeader={false} />
         </TabsContent>
 
         <TabsContent value="privacy" className="space-y-6">
@@ -502,23 +467,34 @@ const Admin = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
-                Import Latest XLSX
+                Import External Data
               </CardTitle>
               <CardDescription>
-                Upload the IOM_DTM_ETT_SOM_Tracker_sinceFeb2025_w49.xlsx (or newer). Imported data will be used across all tabs.
+                Import IOM/MOH displacement sheets, MOH Penta3 workbooks, and sync GAM from FSNAU. Imported data will be used across dashboard scoring and reports.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Select .xlsx file</Label>
+                <Select value={importDataset} onValueChange={(value) => setImportDataset(value as ImportDataset)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IOM_ETT">IOM ETT import</SelectItem>
+                    <SelectItem value="MOH_ETT">MOH ETT import</SelectItem>
+                    <SelectItem value="MOH_PENTA3_YEARLY">MOH Penta3 yearly workbook</SelectItem>
+                    <SelectItem value="MOH_PENTA3_MONTHLY">MOH Penta3 monthly workbook</SelectItem>
+                    <SelectItem value="IDP_SITE_REGISTRY">IDP site registry workbook</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Input
                   type="file"
                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Expected structure: IOM ETT displacement (14d arrivals), sites, GPS, households. The ingest job will regenerate
-                  `src/data/nabad.generated.ts`.
+                  {importDatasetMeta[importDataset].description}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -545,7 +521,7 @@ const Admin = () => {
                     "Import and refresh"
                   )}
                 </Button>
-                {selectedFile && <Badge variant="outline">{selectedFile.name}</Badge>}
+                {selectedFile && <Badge variant="outline">{importDatasetMeta[importDataset].label} • {selectedFile.name}</Badge>}
               </div>
               {importMutation.isPending && (
                 <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -561,36 +537,49 @@ const Admin = () => {
                 </div>
               )}
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-primary">
-                Uploading will store all columns in the database and refresh the dashboard automatically.
+                XLSX imports are tagged by dataset type. Penta3 workbooks are stored as health indicator observations; site registry workbooks update households and coordinates for mapped sites.
               </div>
 
-              <div className="space-y-2 pt-2">
-                <p className="text-sm font-semibold">Recent imports</p>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  {importsQuery.data?.map((job) => {
-                    const pct = job.totalRows && job.totalRows > 0
-                      ? Math.min(100, Math.round(((job.importedRows ?? 0) / job.totalRows) * 100))
-                      : null;
-                    return (
-                      <div key={job.id} className="flex items-center justify-between border rounded-md px-2 py-1">
-                        <span className="truncate max-w-[180px]" title={job.filename}>{job.filename}</span>
-                        <span className="flex items-center gap-2 text-xs">
-                          {pct !== null && <span>{pct}%</span>}
-                          <Badge variant={job.status === "done" ? "secondary" : job.status === "failed" ? "destructive" : "outline"}>
-                            {job.status}
-                          </Badge>
-                          {job.status === "pending" && <Loader2 className="h-3 w-3 animate-spin" />}
-                        </span>
-                      </div>
-                    );
-                  }) || <span>No imports yet.</span>}
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-900">Sync GAM from FSNAU</p>
+                  <p className="text-xs text-emerald-800">
+                    Pulls the seasonal nutrition summary table from FSNAU and stores GAM observations for matching districts/regions.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Input
+                    value={gamSeason}
+                    onChange={(e) => setGamSeason(e.target.value)}
+                    placeholder="2025/gu"
+                    className="sm:w-40"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => gamSyncMutation.mutate()}
+                    disabled={gamSyncMutation.isPending}
+                  >
+                    {gamSyncMutation.isPending ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Syncing...
+                      </span>
+                    ) : (
+                      "Sync FSNAU GAM"
+                    )}
+                  </Button>
                 </div>
               </div>
+
             </CardContent>
           </Card>
 
           <UICard>
             <UICardContent className="p-4 space-y-3">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                Community responses are not imported here. They flow directly from submitted public forms and are now used in reporting from the database.
+              </div>
               <p className="text-sm font-semibold">Recent imports</p>
               <div className="divide-y rounded-md border text-xs">
                 {importsQuery.data?.length ? (
@@ -602,6 +591,7 @@ const Admin = () => {
                       <div key={job.id} className="flex items-center gap-3 px-3 py-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
+                          <Badge variant="outline">{job.dataset ?? job.source ?? "IOM_ETT"}</Badge>
                             <span className="font-medium truncate" title={job.filename}>{job.filename}</span>
                             {pct !== null && (
                               <span className="text-[10px] text-muted-foreground">
@@ -619,15 +609,14 @@ const Admin = () => {
                           {pct !== null && (
                             <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
                               <div
-                                className="h-full bg-primary transition-all"
+                                className={`h-full transition-all ${
+                                  job.status === "failed" ? "bg-destructive" : job.status === "partial" ? "bg-amber-500" : "bg-primary"
+                                }`}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
                           )}
-                          <Badge variant={
-                            job.status === "done" ? "secondary" :
-                            job.status === "failed" ? "destructive" : "outline"
-                          }>
+                          <Badge variant={getImportBadgeVariant(job.status)}>
                             {job.status}
                           </Badge>
                           {job.status === "pending" && <Loader2 className="h-3 w-3 animate-spin" />}

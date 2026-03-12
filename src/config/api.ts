@@ -1,4 +1,8 @@
-export const API_BASE =
-  typeof window !== "undefined" && window.location.hostname !== "localhost"
+const envApiBase = import.meta.env.VITE_API_URL?.trim();
+
+export const API_BASE = (
+  envApiBase ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost"
     ? "https://backend.adventband.org:3126"
-    : "http://localhost:3126";
+    : "http://localhost:3126")
+).replace(/\/+$/, "");

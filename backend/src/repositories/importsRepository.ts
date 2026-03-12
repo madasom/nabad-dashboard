@@ -13,7 +13,7 @@ export async function createImportJob(
   });
 }
 
-export async function markImportJob(id: string, status: 'done' | 'failed', message?: string) {
+export async function markImportJob(id: string, status: string, message?: string) {
   return prisma.importJob.update({
     where: { id },
     data: { status, message, finishedAt: new Date() },

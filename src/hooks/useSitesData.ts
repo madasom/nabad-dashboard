@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { computeCompositeScore, SiteProfile } from "@/data/nabad";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from "@/config/api";
 
 const apiUrl = API_BASE;
 
 export type ScoredSite = SiteProfile & {
+  id?: string;
   _score: ReturnType<typeof computeCompositeScore>;
+  source?: "IOM" | "MOH";
   ochaRegionPcode?: string | null;
   ochaDistrictPcode?: string | null;
   operationalZone?: string | null;
@@ -31,6 +32,7 @@ export type ScoredSite = SiteProfile & {
   originDistrict?: string | null;
   originLocation?: string | null;
   dataCollectionWeek?: string | null;
+  raw?: Record<string, unknown> | null;
 };
 
 type ApiSite = {
@@ -68,15 +70,22 @@ type ApiSite = {
   penta3: number | null;
   gam: number | null;
   safety: number | null;
+  raw?: Record<string, unknown> | null;
 };
 
-const toProfile = (s: ApiSite): SiteProfile => {
+function isScopedDashboardSite(site: ApiSite) {
+  return String(site.region ?? "").trim().toLowerCase() === "banadir";
+}
+
+const toProfile = (s: ApiSite) => {
+  const source = s.raw?.__source === "MOH" ? "MOH" : "IOM";
   return {
+    id: s.id,
     name: s.settlement_name,
-    district: (s.district as SiteProfile["district"]) ?? "Dayniile",
-    households: s.households ?? 100,
-    lat: s.lat ?? 2.08,
-    lon: s.lon ?? 45.4,
+    district: s.district ?? "Unknown",
+    households: s.households,
+    lat: s.lat,
+    lon: s.lon,
     needs: {
       protection: s.needs?.protection ?? false,
       food: s.needs?.food ?? false,
@@ -84,8 +93,8 @@ const toProfile = (s: ApiSite): SiteProfile => {
       wash: s.needs?.wash ?? false,
       newArrivals: s.needs?.newArrivals ?? false,
     },
-    penta3Coverage: s.penta3 ?? 45,
-    gam: s.gam ?? 15,
+    penta3Coverage: s.penta3,
+    gam: s.gam,
     newArrivals14d: s.arrivals14d ?? 0,
     safety: s.safety ?? 0.5,
     lastReport: new Date().toISOString(),
@@ -111,6 +120,8 @@ const toProfile = (s: ApiSite): SiteProfile => {
     originDistrict: s.originDistrict ?? undefined,
     originLocation: s.originLocation ?? undefined,
     dataCollectionWeek: s.dataCollectionWeek ?? undefined,
+    source,
+    raw: s.raw ?? undefined,
   };
 };
 
@@ -132,7 +143,7 @@ export function useSitesData() {
       }
       if (!res.ok) throw new Error("Failed to fetch sites");
       const data: ApiSite[] = await res.json();
-      return data.map(toProfile);
+      return data.filter(isScopedDashboardSite).map(toProfile);
     },
   });
 

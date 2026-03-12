@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { computeCompositeScore } from "@/data/nabad";
 import { Link } from "react-router-dom";
 import { ScoredSite } from "@/hooks/useSitesData";
@@ -11,7 +12,7 @@ const statusBadge = (score: number) => {
   return <Badge variant="secondary">Stable</Badge>;
 };
 
-export const PriorityTable = ({ sites }: { sites: ScoredSite[] }) => {
+export const PriorityTable = ({ sites, isLoading = false }: { sites: ScoredSite[]; isLoading?: boolean }) => {
   const ranked = sites
     .map((s) => ({ site: s, score: s._score ?? computeCompositeScore(s) }))
     .sort((a, b) => b.score.composite - a.score.composite)
@@ -27,15 +28,33 @@ export const PriorityTable = ({ sites }: { sites: ScoredSite[] }) => {
           </Link>
         </div>
         <div className="space-y-2">
-          {ranked.map((r, idx) => (
-            <div key={r.site.name} className="grid grid-cols-6 gap-2 text-sm items-center">
-              <span className="text-muted-foreground text-xs">#{idx + 1}</span>
-              <span className="col-span-2 font-semibold">{r.site.name}</span>
-              <span className="text-xs text-muted-foreground">{r.site.households} HH</span>
-              <span className="text-xs text-muted-foreground">Arrivals: {r.site.newArrivals14d ?? "—"}</span>
-              <div className="flex items-center gap-2 justify-end">{statusBadge(r.score.composite)}</div>
-            </div>
-          ))}
+          {isLoading &&
+            Array.from({ length: 5 }).map((_, idx) => (
+              <div key={`priority-table-skeleton-${idx}`} className="grid grid-cols-6 gap-2 text-sm items-center">
+                <Skeleton className="h-4 w-6" />
+                <Skeleton className="col-span-2 h-5 w-40" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <div className="flex justify-end">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              </div>
+            ))}
+          {!isLoading && ranked.length === 0 && (
+            <p className="text-sm text-muted-foreground">Loading site priorities failed or returned no rows.</p>
+          )}
+          {!isLoading &&
+            ranked.map((r, idx) => (
+              <div key={r.site.id ?? `${r.site.name}-${idx}`} className="grid grid-cols-6 gap-2 text-sm items-center">
+                <span className="text-muted-foreground text-xs">#{idx + 1}</span>
+                <span className="col-span-2 font-semibold">{r.site.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {r.site.households === null ? "HH unknown" : `${r.site.households} HH`}
+                </span>
+                <span className="text-xs text-muted-foreground">Arrivals: {r.site.newArrivals14d ?? "—"}</span>
+                <div className="flex items-center gap-2 justify-end">{statusBadge(r.score.composite)}</div>
+              </div>
+            ))}
         </div>
       </CardContent>
     </Card>

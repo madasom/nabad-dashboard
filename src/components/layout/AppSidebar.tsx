@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  DatabaseZap,
   Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -24,6 +25,7 @@ const mainNavItems = [
   { title: "Targeting", url: "/targeting", icon: BarChart3 },
   { title: "Operations", url: "/operations", icon: Calendar },
   { title: "Impact", url: "/impact", icon: FileText },
+  { title: "Data Validation", url: "/data-validation", icon: DatabaseZap },
 ];
 
 const bottomNavItems = [
@@ -88,7 +90,7 @@ export function AppSidebar() {
       <div className="flex items-center h-16 px-4 border-b border-sidebar-border gap-3">
         <div
           className="h-10 w-10 flex-shrink-0 bg-center bg-no-repeat bg-contain"
-          style={{ backgroundImage: `url(${collapsed ? "/DAWA-logo.png.png" : "/DAWA-logo.png"})` }}
+          style={{ backgroundImage: `url(${collapsed ? "/DAWA-logo.png" : "/DAWA-logo.png"})` }}
           aria-label="DawaSom logo"
         />
         {!collapsed && (

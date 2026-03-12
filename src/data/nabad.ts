@@ -5,13 +5,13 @@ export type NeedType = "protection" | "food" | "health" | "wash" | "newArrivals"
 
 export interface SiteProfile {
   name: string;
-  district: "Dayniile" | "Hodan" | "Kahda";
-  households: number;
-  lat: number;
-  lon: number;
+  district: string;
+  households: number | null;
+  lat: number | null;
+  lon: number | null;
   needs: Record<NeedType, boolean>;
-  penta3Coverage: number; // percentage
-  gam: number; // percentage
+  penta3Coverage: number | null; // percentage
+  gam: number | null; // percentage
   newArrivals14d: number;
   safety: number; // 0-1, higher is safer
   lastReport: string;
@@ -62,7 +62,7 @@ export interface DeploymentCycle {
 }
 
 const districtRotation: SiteProfile["district"][] = ["Dayniile", "Hodan", "Kahda"];
-const healthByDistrict: Record<SiteProfile["district"], { penta3: number; gam: number }> = {
+const healthByDistrict: Record<string, { penta3: number; gam: number }> = {
   Dayniile: { penta3: 44, gam: 16.8 },
   Hodan: { penta3: 52, gam: 14.1 },
   Kahda: { penta3: 39, gam: 17.5 },
@@ -210,9 +210,8 @@ export const deploymentCycles: DeploymentCycle[] = [
 export const defaultWeights = {
   displacement: 0.3,
   health: 0.3,
-  needs: 0.2,
-  community: 0.15,
-  safety: 0.05,
+  needs: 0.25,
+  community: 0.5,
 };
 
 const severityWeight: Record<CommunityAlert["severity"], number> = {
@@ -227,7 +226,16 @@ export function computeCompositeScore(
   weights = defaultWeights,
   alertFeed: CommunityAlert[] = communityAlerts
 ) {
-  const healthRisk = (1 - site.penta3Coverage / 100) * 0.6 + (site.gam / 20) * 0.4;
+  const pentaRisk = site.penta3Coverage === null ? null : 1 - site.penta3Coverage / 100;
+  const gamRisk = site.gam === null ? null : site.gam / 20;
+  const healthSignals = [
+    pentaRisk === null ? null : { value: pentaRisk, weight: 0.6 },
+    gamRisk === null ? null : { value: gamRisk, weight: 0.4 },
+  ].filter((signal): signal is { value: number; weight: number } => signal !== null);
+  const healthRisk = healthSignals.length
+    ? healthSignals.reduce((acc, signal) => acc + signal.value * signal.weight, 0) /
+      healthSignals.reduce((acc, signal) => acc + signal.weight, 0)
+    : 0;
   const displacementRisk = Math.min(site.newArrivals14d / 250, 1);
   const needsScore =
     (site.needs.protection ? 1 : 0) +
@@ -249,8 +257,7 @@ export function computeCompositeScore(
     weights.displacement * displacementRisk +
     weights.health * healthRisk +
     weights.needs * normalizedNeeds +
-    weights.community * normalizedCommunity +
-    weights.safety * safetyPenalty;
+    weights.community * normalizedCommunity;
 
   return {
     composite: Math.round(composite * 100),
@@ -259,6 +266,7 @@ export function computeCompositeScore(
     communitySignals: Math.round(normalizedCommunity * 100),
     needsScore: Math.round(normalizedNeeds * 100),
     safetyPenalty: Math.round(safetyPenalty * 100),
+    missingHealthData: healthSignals.length < 2,
   };
 }
 

@@ -5,6 +5,7 @@ import {
   BarChart3,
   Settings,
   FileText,
+  DatabaseZap,
   Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -22,6 +23,7 @@ const mainNavItems = [
   { title: "Targeting", url: "/targeting", icon: BarChart3 },
   { title: "Operations", url: "/operations", icon: Calendar },
   { title: "Impact", url: "/impact", icon: FileText },
+  { title: "Data Validation", url: "/data-validation", icon: DatabaseZap },
 ];
 
 const bottomNavItems = [
@@ -48,7 +50,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
         <SheetHeader className="flex flex-row items-center h-16 px-4 border-b border-border">
           <div className="flex items-center justify-start flex-1">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white border border-border overflow-hidden">
-              <img src="/logo.jpeg" alt="Nabad Mobile Hub logo" className="w-full h-full object-cover" />
+              <img src="/logo.jpeg" alt="DawaSom logo" className="w-full h-full object-cover" />
             </div>
           </div>
         </SheetHeader>

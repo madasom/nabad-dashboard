@@ -45,6 +45,22 @@ export async function listFormResponses(formId: string, limit = 50): Promise<For
   });
 }
 
+export async function listAllFormResponses(limit = 250) {
+  return prisma.formResponse.findMany({
+    orderBy: { submittedAt: 'desc' },
+    take: limit,
+    include: {
+      form: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+        },
+      },
+    },
+  });
+}
+
 export async function deleteForm(id: string): Promise<void> {
   await prisma.formResponse.deleteMany({ where: { formId: id } });
   await prisma.form.delete({ where: { id } });

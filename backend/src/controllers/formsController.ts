@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createForm, getFormBySlug, listForms, submitFormResponse, updateForm, listFormResponses, deleteForm } from '../repositories/formsRepository';
+import { createForm, getFormBySlug, listForms, submitFormResponse, updateForm, listFormResponses, deleteForm, listAllFormResponses } from '../repositories/formsRepository';
 
 export async function listFormsController(_req: Request, res: Response) {
   try {
@@ -63,6 +63,15 @@ export async function listFormResponsesController(req: Request, res: Response) {
     res.json(responses);
   } catch (err: any) {
     res.status(500).json({ message: err.message ?? 'Failed to fetch responses' });
+  }
+}
+
+export async function listAllFormResponsesController(_req: Request, res: Response) {
+  try {
+    const responses = await listAllFormResponses();
+    res.json(responses);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message ?? 'Failed to fetch form responses' });
   }
 }
 

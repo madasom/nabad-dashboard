@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import type { Role } from '../types/models';
 
 const secret = process.env.JWT_SECRET ?? 'dev-secret-key';
+type Role = string;
 
 export interface AuthenticatedRequest extends Request {
   user?: { id: string; email: string; role: Role; name: string };

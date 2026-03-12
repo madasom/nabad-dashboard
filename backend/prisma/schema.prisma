@@ -50,6 +50,26 @@ model Site {
   updatedAt        DateTime @updatedAt
 }
 
+model IndicatorObservation {
+  id          String      @id
+  importJobId String?
+  importJob   ImportJob?  @relation(fields: [importJobId], references: [id])
+  source      String
+  dataset     String
+  indicator   String
+  locationName String
+  district    String?
+  region      String?
+  periodLabel String
+  periodDate  DateTime?
+  numerator   Float?
+  denominator Float?
+  value       Float
+  notes       String?
+  raw         Json?
+  createdAt   DateTime    @default(now())
+}
+
 model CommunityAlert {
   id         String   @id
   siteName   String
@@ -95,6 +115,7 @@ model ImportJob {
   createdAt  DateTime @default(now())
   finishedAt DateTime?
   sites      Site[]
+  observations IndicatorObservation[]
 }
 
 model User {

@@ -13,7 +13,7 @@ import { useState, useMemo } from "react";
 import { useSitesData } from "@/hooks/useSitesData";
 
 const Targeting = () => {
-  const { data: siteProfiles } = useSitesData();
+  const { data: siteProfiles, isLoading: sitesLoading } = useSitesData();
   const [selected, setSelected] = useState<string | null>(siteProfiles[0]?.name ?? null);
   const [filters, setFilters] = useState({ threshold: 50, district: "all", onlySafe: false });
 
@@ -26,7 +26,7 @@ const Targeting = () => {
       const safe = filters.onlySafe ? s.safety >= 0.45 : true;
       return meetsScore && safe;
     });
-  }, [filters]);
+  }, [filters, siteProfiles]);
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -34,13 +34,13 @@ const Targeting = () => {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">Predictive Targeting Engine</h1>
           <p className="text-muted-foreground">
-            CVI blends DHIS2, IOM ETT, and CDMC signals. Lead indicator: new arrivals + Penta3 gap.
+            CVI blends displacement, health, needs, and community/MOH alert signals.
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Settings2 className="h-4 w-4" />
-          Weights: displacement {defaultWeights.displacement * 100}%, health {defaultWeights.health * 100}%, community{" "}
-          {defaultWeights.community * 100}%
+          Weights: displacement {defaultWeights.displacement * 100}%, health {defaultWeights.health * 100}%, needs{" "}
+          {defaultWeights.needs * 100}%, community/MOH alerts {defaultWeights.community * 100}%
         </div>
       </div>
 
@@ -50,6 +50,7 @@ const Targeting = () => {
             sites={filteredSites.length ? filteredSites : siteProfiles}
             onSelect={setSelected}
             selected={selected}
+            isLoading={sitesLoading}
           />
           <HealthDisplacement sites={siteProfiles} />
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -66,7 +67,7 @@ const Targeting = () => {
             onChange={setFilters}
             sites={siteProfiles}
           />
-          <PriorityStack sites={siteProfiles} />
+          <PriorityStack sites={siteProfiles} isLoading={sitesLoading} />
         </div>
       </div>
 
@@ -74,9 +75,9 @@ const Targeting = () => {
         <CardContent className="p-4 text-sm text-muted-foreground space-y-1">
           <p className="font-semibold text-foreground">Decision rules</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>CVI ≥ 65 → stage deployment; CVI ≥ 80 + critical need → deploy, unless safety &lt; 45%.</li>
+            <li>CVI ≥ 65 → stage deployment; CVI ≥ 80 + critical need → deploy.</li>
             <li>Hotspot thresholds: Penta3 &lt; 50%; GAM &gt; 15%; new arrivals &gt; 15% of HH in 14d.</li>
-            <li>Conflicts: CDMC critical alerts override IOM “empty” flag for 48 hours pending verification.</li>
+            <li>Community and MOH alerts contribute 50% of CVI; corridor safety remains an operational check outside CVI.</li>
           </ul>
         </CardContent>
       </Card>

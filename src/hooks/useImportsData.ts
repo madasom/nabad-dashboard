@@ -8,6 +8,8 @@ const apiUrl = API_BASE;
 export type ImportJob = {
   id: string;
   filename: string;
+  source?: "IOM" | "MOH" | "FSNAU";
+  dataset?: "IOM_ETT" | "MOH_ETT" | "MOH_PENTA3_YEARLY" | "MOH_PENTA3_MONTHLY" | "IDP_SITE_REGISTRY" | "FSNAU_GAM";
   status: "pending" | "failed" | "done" | string;
   message?: string | null;
   totalRows?: number | null;
@@ -33,7 +35,16 @@ export function useImportsData() {
         throw new Error("Unauthorized");
       }
       if (!res.ok) throw new Error("Failed to fetch imports");
-      return res.json();
+      const jobs = (await res.json()) as ImportJob[];
+      return jobs.map((job) => ({
+        ...job,
+        dataset: job.filename.match(/^\[([A-Z0-9_]+)\]\s/)?.[1] as ImportJob["dataset"] | undefined,
+        source: job.filename.startsWith("[MOH")
+          ? "MOH"
+          : job.filename.startsWith("[FSNAU")
+            ? "FSNAU"
+            : "IOM",
+      }));
     },
   });
   return query;
