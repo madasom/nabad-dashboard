@@ -15,8 +15,8 @@ const host = process.env.HOST ?? '0.0.0.0';
 
 const keyPath = process.env.SSL_KEY_PATH ?? path.resolve(process.cwd(), 'ssl/key.pem');
 const certPath = process.env.SSL_CERT_PATH ?? path.resolve(process.cwd(), 'ssl/certificate.pem');
-// const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
-const useHttps = false
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+// const useHttps = false
 
 console.log(`Starting server on port ${port} (${useHttps ? 'https' : 'http'})`);
 
