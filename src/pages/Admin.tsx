@@ -36,6 +36,7 @@ import {
   CheckCircle,
   Info,
   Upload,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -52,6 +53,7 @@ import { useSitesData } from "@/hooks/useSitesData";
 import { useAlertsData } from "@/hooks/useAlertsData";
 import { API_BASE } from "@/config/api";
 import { ReportsPanel } from "@/components/reports/ReportsPanel";
+import * as XLSX from "xlsx";
 
 type ImportDataset = "IOM_ETT" | "MOH_ETT" | "MOH_PENTA3_YEARLY" | "MOH_PENTA3_MONTHLY" | "IDP_SITE_REGISTRY";
 
@@ -77,6 +79,99 @@ const importDatasetMeta: Record<ImportDataset, { label: string; description: str
     description: "Expected structure: site registry with IDP Site Name, Households, Latitude, and Longitude columns.",
   },
 };
+
+const importTemplateFiles: Record<ImportDataset, string> = {
+  IOM_ETT: "iom_ett_template.xlsx",
+  MOH_ETT: "moh_ett_template.xlsx",
+  MOH_PENTA3_YEARLY: "moh_penta3_yearly_template.xlsx",
+  MOH_PENTA3_MONTHLY: "moh_penta3_monthly_template.xlsx",
+  IDP_SITE_REGISTRY: "idp_site_registry_template.xlsx",
+};
+
+const ettTemplateRows = [
+  {
+    "Settlement ID": "SET-001",
+    "Settlement Name": "Example Site",
+    "District Name": "Gubadley",
+    "Region Name": "Banadir",
+    "OCHA Region Pcode": "SO22",
+    "OCHA District Pcode": "SO2201",
+    "Operational Zone": "OPZ 001",
+    Catchment: "Catchment A",
+    "Settlement Classification": "IDP site (camp or camp like setting)",
+    "Location Type": "Urban (Waah/Neighborhood)",
+    Latitude: 2.0843,
+    Longitude: 45.4018,
+    "Total HH": 520,
+    "Total new arrivals since last week": 42,
+    "Number of Males (18 and above) since last week": 10,
+    "Number of Females (18 and above) since last week": 12,
+    "Number of Children under 18 since last week": 20,
+    "Total number of departures since last week": 5,
+    "Main Cause of Displacement": "Drought",
+    "Main Cause of Displacement (type of Natural hazard)": "Drought",
+    "Main Cause of Displacement (type of conflict)": "",
+    "Main need for the majority of IDPs in settlement": "Drinking Water",
+    "Needs - General Protection Services": "No",
+    "Needs - GBV Services": "No",
+    "Needs - Child Protection Services": "No",
+    "Needs - General Food distribution": "Yes",
+    "Needs - Health Services": "Yes",
+    "Needs - Water Services": "Yes",
+    "Needs - Sanitation Services (latrines etc)": "No",
+    "Needs - Hygiene services (soap, hygiene kits, etc)": "No",
+    "New arrivals since last week": "Yes",
+    "Response - General food distribution to new arrivals": "Yes",
+    "Response - Shelter Materials": "No",
+    "Response - NFIs": "No",
+    "Response - Health Services": "Yes",
+    "Response - Nutrition Services": "No",
+    "Response - Water Services": "Yes",
+    "Response - Sanitation Services (latrines etc)": "No",
+    "Response - Hygiene Services (soap, hygiene kits, etc)": "No",
+    "Response - General Protection Services": "No",
+    "Response - GBV Services": "No",
+    "Response - CCCM Site Improvement": "No",
+    "Response - CCCM Site Decongestion": "No",
+    "Response - CCCM Complaints and Feedback Mechanism": "No",
+    "Response - CCCM Plot Allocation": "No",
+    "Type of movement of the majority of the new arrivals": "Spontaneous",
+    "How many times was the majority displaced since they left place of origin": "First displacement",
+    "How long did the whole journey take for the majority": "Less than 1 day",
+    "Somalia Region of Origin": "Bay",
+    "Somalia District of Origin": "Baidoa",
+    "Somalia Location of Origin": "Example Village",
+    "Data Collection Week": "Week 12 (20 - 24 March, 2026)",
+    "Penta3 coverage": 71.2,
+    "GAM prevalence": 13.4,
+    "Safety Index": 62.5,
+  },
+];
+
+const registryTemplateRows = [
+  {
+    "IDP Site Name": "Example Site",
+    District: "Gubadley",
+    Region: "Banadir",
+    Latitude: 2.0843,
+    Longitude: 45.4018,
+    Households: 520,
+  },
+];
+
+const pentaYearlyTemplateRows = [
+  ["Example Health Facility"],
+  ["PeriodName", "Penta 1", "Penta 3"],
+  ["2024", 1200, 1080],
+  ["2025", 1320, 1215],
+];
+
+const pentaMonthlyTemplateRows = [
+  ["Example Health Facility"],
+  ["PeriodName", "Pentavale 1st dose", "Pentavale 3rd dose"],
+  ["2026-01", 120, 110],
+  ["2026-02", 130, 122],
+];
 
 const Admin = () => {
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
@@ -332,6 +427,26 @@ const Admin = () => {
       toast({ title: "GAM sync failed", description: err.message, variant: "destructive" });
     },
   });
+
+  const downloadImportTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+
+    if (importDataset === "IOM_ETT" || importDataset === "MOH_ETT") {
+      const sheet = XLSX.utils.json_to_sheet(ettTemplateRows);
+      XLSX.utils.book_append_sheet(workbook, sheet, "ETT Import");
+    } else if (importDataset === "IDP_SITE_REGISTRY") {
+      const sheet = XLSX.utils.json_to_sheet(registryTemplateRows);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Registry");
+    } else if (importDataset === "MOH_PENTA3_YEARLY") {
+      const sheet = XLSX.utils.aoa_to_sheet(pentaYearlyTemplateRows);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Penta3 Yearly");
+    } else if (importDataset === "MOH_PENTA3_MONTHLY") {
+      const sheet = XLSX.utils.aoa_to_sheet(pentaMonthlyTemplateRows);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Penta3 Monthly");
+    }
+
+    XLSX.writeFile(workbook, importTemplateFiles[importDataset]);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -658,6 +773,15 @@ const Admin = () => {
                 <p className="text-xs text-muted-foreground">
                   {importDatasetMeta[importDataset].description}
                 </p>
+                <div className="flex items-center gap-3">
+                  <Button type="button" variant="outline" size="sm" onClick={downloadImportTemplate}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download template
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Downloads a sample workbook for {importDatasetMeta[importDataset].label.toLowerCase()}.
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button
