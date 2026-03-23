@@ -5,13 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -53,7 +47,7 @@ import { useImportsData } from "@/hooks/useImportsData";
 import { Card as UICard, CardContent as UICardContent } from "@/components/ui/card";
 import { useForms, useCreateForm, useUpdateForm } from "@/hooks/useForms";
 import { useDeleteForm } from "@/hooks/useDeleteForm";
-import { useUsers } from "@/hooks/useUsers";
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from "@/hooks/useUsers";
 import { useSitesData } from "@/hooks/useSitesData";
 import { useAlertsData } from "@/hooks/useAlertsData";
 import { API_BASE } from "@/config/api";
@@ -85,12 +79,13 @@ const importDatasetMeta: Record<ImportDataset, { label: string; description: str
 };
 
 const Admin = () => {
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importDataset, setImportDataset] = useState<ImportDataset>("IOM_ETT");
   const [gamSeason, setGamSeason] = useState("2025/gu");
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadPhase, setUploadPhase] = useState<string | null>(null);
@@ -100,8 +95,17 @@ const Admin = () => {
   const updateForm = useUpdateForm();
   const deleteForm = useDeleteForm();
   const usersQuery = useUsers();
+  const createUser = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
   const sitesQuery = useSitesData();
   const alertsQuery = useAlertsData();
+  const [memberForm, setMemberForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -149,6 +153,87 @@ const Admin = () => {
 
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [previewForm, setPreviewForm] = useState<any | null>(null);
+
+  const resetMemberForm = () => {
+    setMemberForm({ name: "", email: "", password: "" });
+    setEditingUserId(null);
+  };
+
+  const openCreateUserDialog = () => {
+    resetMemberForm();
+    setCreateUserDialogOpen(true);
+  };
+
+  const openEditUserDialog = (member: { id: string; name: string; email: string }) => {
+    setEditingUserId(member.id);
+    setMemberForm({
+      name: member.name,
+      email: member.email,
+      password: "",
+    });
+    setEditUserDialogOpen(true);
+  };
+
+  const handleCreateUser = async () => {
+    if (!memberForm.name.trim() || !memberForm.email.trim() || !memberForm.password.trim()) {
+      toast({
+        title: "Missing fields",
+        description: "Name, email, and password are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createUser.mutateAsync({
+        name: memberForm.name.trim(),
+        email: memberForm.email.trim().toLowerCase(),
+        password: memberForm.password,
+      });
+      toast({ title: "User created", description: `${memberForm.name.trim()} can now sign in.` });
+      setCreateUserDialogOpen(false);
+      resetMemberForm();
+    } catch (err: any) {
+      toast({ title: "Failed to create user", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUserId || !memberForm.name.trim() || !memberForm.email.trim()) {
+      toast({
+        title: "Missing fields",
+        description: "Name and email are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateUserMutation.mutateAsync({
+        id: editingUserId,
+        name: memberForm.name.trim(),
+        email: memberForm.email.trim().toLowerCase(),
+        password: memberForm.password.trim() ? memberForm.password : undefined,
+      });
+      toast({ title: "User updated", description: `${memberForm.name.trim()} was updated.` });
+      setEditUserDialogOpen(false);
+      resetMemberForm();
+    } catch (err: any) {
+      toast({ title: "Failed to update user", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteUser = async (member: { id: string; name: string }) => {
+    const confirmed = window.confirm(`Delete ${member.name}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteUserMutation.mutateAsync(member.id);
+      toast({ title: "User deleted", description: `${member.name} was removed.` });
+    } catch (err: any) {
+      toast({ title: "Failed to delete user", description: err.message, variant: "destructive" });
+    }
+  };
 
   const getImportBadgeVariant = (status: string) => {
     if (status === "done") return "secondary" as const;
@@ -253,7 +338,7 @@ const Admin = () => {
       <div className="page-header">
         <h1 className="page-title">DawaSom — Admin & Access Control</h1>
         <p className="page-description">
-          Manage DawaSom team access, roles, and data privacy for the Nabad Mobile Hub
+          Manage DawaSom team access and data privacy for the Nabad Mobile Hub
         </p>
       </div>
 
@@ -316,8 +401,8 @@ const Admin = () => {
                     <Info className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">1</p>
-                    <p className="text-sm text-muted-foreground">Role tier</p>
+                    <p className="text-2xl font-bold">Admin</p>
+                    <p className="text-sm text-muted-foreground">Access level</p>
                   </div>
                 </div>
               </CardContent>
@@ -330,40 +415,95 @@ const Admin = () => {
                 <CardTitle>Team Members</CardTitle>
                 <CardDescription>Manage who has access to the dashboard</CardDescription>
               </div>
-              <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+              <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button size="sm" onClick={openCreateUserDialog}>
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Invite Member
+                    Create User
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Invite Team Member</DialogTitle>
-                    <DialogDescription>Send an invitation to join the dashboard</DialogDescription>
+                    <DialogTitle>Create Team Member</DialogTitle>
+                    <DialogDescription>Add an admin user with a password.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label>Email Address</Label>
-                      <Input placeholder="name@oxfam.org" type="email" />
+                      <Label>Name</Label>
+                      <Input
+                        placeholder="Amina Hassan"
+                        value={memberForm.name}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, name: e.target.value }))}
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label>Role</Label>
-                      <Select defaultValue="field">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Platform Admin</SelectItem>
-                          <SelectItem value="ops">Operations Lead</SelectItem>
-                          <SelectItem value="analyst">Data Analyst</SelectItem>
-                          <SelectItem value="field">Field Team</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label>Email Address</Label>
+                      <Input
+                        placeholder="name@oxfam.org"
+                        type="email"
+                        value={memberForm.email}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, email: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Temporary Password</Label>
+                      <Input
+                        placeholder="At least 8 characters"
+                        type="password"
+                        value={memberForm.password}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, password: e.target.value }))}
+                      />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button onClick={() => setInviteDialogOpen(false)}>Send Invite</Button>
+                    <Button onClick={handleCreateUser} disabled={createUser.isPending}>
+                      {createUser.isPending ? "Creating..." : "Create User"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Dialog
+                open={editUserDialogOpen}
+                onOpenChange={(open) => {
+                  setEditUserDialogOpen(open);
+                  if (!open) resetMemberForm();
+                }}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Team Member</DialogTitle>
+                    <DialogDescription>Update the user profile or password.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input
+                        value={memberForm.name}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <Input
+                        type="email"
+                        value={memberForm.email}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, email: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>New Password</Label>
+                      <Input
+                        type="password"
+                        placeholder="Leave blank to keep the current password"
+                        value={memberForm.password}
+                        onChange={(e) => setMemberForm((prev) => ({ ...prev, password: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleUpdateUser} disabled={updateUserMutation.isPending}>
+                      {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -375,6 +515,7 @@ const Admin = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -393,6 +534,27 @@ const Admin = () => {
                         <Badge variant="success">
                           active
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditUserDialog(member)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(member)}
+                            disabled={deleteUserMutation.isPending || user?.id === member.id}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

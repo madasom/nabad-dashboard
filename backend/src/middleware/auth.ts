@@ -5,7 +5,7 @@ const secret = process.env.JWT_SECRET ?? 'dev-secret-key';
 type Role = string;
 
 export interface AuthenticatedRequest extends Request {
-  user?: { id: string; email: string; role: Role; name: string };
+  user?: { id: string; email: string; role: Role; name: string; firstLogin: boolean; mustChangePassword: boolean };
 }
 
 export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
@@ -34,6 +34,14 @@ export function requireRole(...allowed: Role[]) {
   };
 }
 
-export function signJwt(user: { id: string; email: string; role: Role; name: string }): string {
+export function requirePasswordChangeComplete(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  if (req.user?.mustChangePassword || req.user?.firstLogin) {
+    res.status(403).json({ message: 'Password change required' });
+    return;
+  }
+  next();
+}
+
+export function signJwt(user: { id: string; email: string; role: Role; name: string; firstLogin: boolean; mustChangePassword: boolean }): string {
   return jwt.sign(user, secret, { expiresIn: '8h' });
 }

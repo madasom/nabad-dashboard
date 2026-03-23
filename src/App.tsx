@@ -18,6 +18,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import FormPublic from "./pages/FormPublic";
+import ChangePassword from "./pages/ChangePassword";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +33,10 @@ const LoginShell = () => <Outlet />;
 const router = createBrowserRouter([
   {
     element: <LoginShell />,
-    children: [{ path: "login", element: <Login /> }],
+    children: [
+      { path: "login", element: <Login /> },
+      { path: "change-password", element: <RequireAuth allowPasswordChange><ChangePassword /></RequireAuth> },
+    ],
   },
   {
     element: <Root />,

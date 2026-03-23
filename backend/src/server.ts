@@ -9,14 +9,15 @@ import { ensureSeedUser } from './repositories/usersRepository';
 import { ensureSeedAlerts } from './services/alertsService';
 import { triggerProcessing, ensureSeedGubadleySites } from './services/sitesService';
 
-const defaultPort = process.env.NODE_ENV === 'production' ? 3126 : 4000;
+const defaultPort = 3126;
 const port = Number(process.env.PORT ?? defaultPort);
 const host = process.env.HOST ?? '0.0.0.0';
 
 const keyPath = process.env.SSL_KEY_PATH ?? path.resolve(process.cwd(), 'ssl/key.pem');
 const certPath = process.env.SSL_CERT_PATH ?? path.resolve(process.cwd(), 'ssl/certificate.pem');
-const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
-// const useHttps = false
+const useHttps =
+  process.env.ENABLE_HTTPS === 'true' ||
+  (process.env.NODE_ENV === 'production' && fs.existsSync(keyPath) && fs.existsSync(certPath));
 
 console.log(`Starting server on port ${port} (${useHttps ? 'https' : 'http'})`);
 

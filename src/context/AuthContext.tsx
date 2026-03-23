@@ -5,12 +5,15 @@ type User = {
   email: string;
   name: string;
   role: string;
+  firstLogin: boolean;
+  mustChangePassword: boolean;
 } | null;
 
 type AuthContextType = {
   user: User;
   token: string | null;
   login: (payload: { token: string; user: User }) => void;
+  updateUser: (user: User) => void;
   logout: () => void;
 };
 
@@ -30,6 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("authUser", JSON.stringify(user));
   };
 
+  const updateUser = (user: User) => {
+    setUser(user);
+    if (user) {
+      localStorage.setItem("authUser", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("authUser");
+    }
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -42,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) logout();
   }, [token]);
 
-  const value = useMemo(() => ({ user, token, login, logout }), [user, token]);
+  const value = useMemo(() => ({ user, token, login, updateUser, logout }), [user, token]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -119,9 +119,11 @@ model ImportJob {
 }
 
 model User {
-  id       String @id
-  email    String @unique
-  name     String
-  password String
-  role     String
+  id                 String  @id
+  email              String  @unique
+  name               String
+  password           String
+  role               String
+  firstLogin         Boolean @default(true)
+  mustChangePassword Boolean @default(false)
 }

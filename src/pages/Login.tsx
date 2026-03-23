@@ -34,7 +34,11 @@ const Login = () => {
       if (!res.ok) throw new Error("Invalid credentials");
       const data = await res.json();
       login({ token: data.token, user: data.user });
-      navigate((location.state as any)?.from ?? "/", { replace: true });
+      if (data.user?.firstLogin || data.user?.mustChangePassword) {
+        navigate("/change-password", { replace: true });
+      } else {
+        navigate((location.state as any)?.from ?? "/", { replace: true });
+      }
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {
